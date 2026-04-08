@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { EnhancedAnalysisResult } from '@/lib/openai-client'
 import { useAuth } from '@/lib/auth-context'
 import { UploadPanel } from "./upload-panel"
@@ -9,6 +10,15 @@ import { EmptyState } from "./empty-state"
 import { LoadingState } from "./loading-state"
 import { AnalysisHistory } from "./analysis-history"
 import { saveAnalysis, type StoredAnalysis } from "@/lib/storage"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export type AnalysisState = "empty" | "loading" | "error" | "success"
 export type Language = "en" | "hi" | "hinglish"
@@ -17,17 +27,21 @@ export type Decision = "safe" | "careful" | "risky"
 export type AnalysisResult = EnhancedAnalysisResult
 
 export function DashboardContent() {
+  const router = useRouter()
   const { user } = useAuth()
   const [state, setState] = React.useState<AnalysisState>("empty")
   const [results, setResults] = React.useState<AnalysisResult | null>(null)
   const [language, setLanguage] = React.useState<Language>("en")
   const [documentText, setDocumentText] = React.useState("")
   const [error, setError] = React.useState<string | null>(null)
+  const [showSignupDialog, setShowSignupDialog] = React.useState(false)
 
   const handleAnalyze = async () => {
     if (!documentText.trim()) return
+    
+    // If not authenticated, show signup dialog
     if (!user) {
-      setError("You must be signed in to analyze documents")
+      setShowSignupDialog(true)
       return
     }
 
@@ -124,6 +138,24 @@ export function DashboardContent() {
 
       {/* Analysis History */}
       <AnalysisHistory onSelectAnalysis={handleLoadFromHistory} />
+
+      {/* Signup Dialog */}
+      <AlertDialog open={showSignupDialog} onOpenChange={setShowSignupDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sign Up to Analyze Documents</AlertDialogTitle>
+            <AlertDialogDescription>
+              Create an account to analyze your legal documents with AI. It takes less than a minute!
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-3">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => router.push("/signup")}>
+              Sign Up
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
