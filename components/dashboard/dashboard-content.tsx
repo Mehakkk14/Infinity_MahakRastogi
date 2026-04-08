@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { EnhancedAnalysisResult } from '@/lib/openai-client'
+import { useAuth } from '@/lib/auth-context'
 import { UploadPanel } from "./upload-panel"
 import { ResultsPanel } from "./results-panel"
 import { EmptyState } from "./empty-state"
@@ -16,6 +17,7 @@ export type Decision = "safe" | "careful" | "risky"
 export type AnalysisResult = EnhancedAnalysisResult
 
 export function DashboardContent() {
+  const { user } = useAuth()
   const [state, setState] = React.useState<AnalysisState>("empty")
   const [results, setResults] = React.useState<AnalysisResult | null>(null)
   const [language, setLanguage] = React.useState<Language>("en")
@@ -24,15 +26,23 @@ export function DashboardContent() {
 
   const handleAnalyze = async () => {
     if (!documentText.trim()) return
+    if (!user) {
+      setError("You must be signed in to analyze documents")
+      return
+    }
 
     setState("loading")
     setError(null)
 
     try {
+      // Get ID token from user
+      const idToken = await user.getIdToken()
+
       const response = await fetch("/api/documents/analyze", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`,
         },
         body: JSON.stringify({
           documentText: documentText,

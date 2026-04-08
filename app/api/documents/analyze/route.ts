@@ -1,11 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyzeLegalDocument } from '@/lib/openai-client'
 import { getDemoAnalysis } from '@/lib/demo'
+import { verifyIdToken, getAuthToken } from '@/lib/firebase-admin'
+import { db } from '@/lib/firebase'
+import { collection, addDoc, Timestamp } from 'firebase/firestore'
 
 export const maxDuration = 60 // Increase timeout for longer analyses
 
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const token = getAuthToken(request)
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Unauthorized - please sign in' },
+        { status: 401 }
+      )
+    }
+
+    // Verify token
+    let userId: string
+    try {
+      const decodedToken = await verifyIdToken(token)
+      userId = decodedToken.uid
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid or expired token' },
+        { status: 401 }
+      )
+    }
+
     const { documentText } = await request.json()
 
     if (!documentText || documentText.trim().length === 0) {
