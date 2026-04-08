@@ -4,8 +4,9 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
-import { Menu, Moon, Sun, X, FileSearch } from "lucide-react"
+import { Menu, Moon, Sun, X, FileSearch, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/lib/auth-context"
 import { cn } from "@/lib/utils"
 
 const navLinks = [
@@ -17,12 +18,24 @@ const navLinks = [
 export function Navbar() {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
+  const { user } = useAuth()
   const [mounted, setMounted] = React.useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
 
   React.useEffect(() => {
     setMounted(true)
   }, [])
+
+  const handleLogout = async () => {
+    try {
+      // Sign out from Firebase
+      const { auth } = await import("@/lib/firebase")
+      await auth.signOut()
+      window.location.href = "/"
+    } catch (error) {
+      console.error("Logout error:", error)
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
@@ -71,16 +84,35 @@ export function Navbar() {
 
           {/* Auth Buttons - Desktop */}
           <div className="hidden items-center gap-2 md:flex">
-            <Link href="/signin">
-              <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button className="bg-primary hover:bg-primary/90">
-                Sign Up
-              </Button>
-            </Link>
+            {user ? (
+              <>
+                <span className="text-sm text-muted-foreground">
+                  {user.email?.split("@")[0]}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/signin">
+                  <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/signup">
+                  <Button className="bg-primary hover:bg-primary/90">
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -120,16 +152,37 @@ export function Navbar() {
               </Link>
             ))}
             <div className="mt-2 flex flex-col gap-2">
-              <Link href="/signin" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="outline" className="w-full">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
-                <Button className="w-full bg-primary hover:bg-primary/90">
-                  Sign Up
-                </Button>
-              </Link>
+              {user ? (
+                <>
+                  <span className="text-sm text-muted-foreground px-4 py-2">
+                    {user.email?.split("@")[0]}
+                  </span>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      handleLogout()
+                      setMobileMenuOpen(false)
+                    }}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link href="/signin" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="outline" className="w-full">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
+                    <Button className="w-full bg-primary hover:bg-primary/90">
+                      Sign Up
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

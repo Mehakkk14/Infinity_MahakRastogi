@@ -27,10 +27,12 @@ export function UploadPanel({
 }: UploadPanelProps) {
   const [isDragging, setIsDragging] = React.useState(false)
   const [isUploading, setIsUploading] = React.useState(false)
+  const [uploadedFileName, setUploadedFileName] = React.useState<string>("")
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const processFile = async (file: File) => {
     setIsUploading(true)
+    setUploadedFileName(file.name)
     try {
       const formData = new FormData()
       formData.append('file', file)
@@ -48,6 +50,7 @@ export function UploadPanel({
       setDocumentText(result.text)
     } catch (error) {
       console.error('File upload error:', error)
+      setUploadedFileName('')
       alert('Failed to upload file. Please try pasting the text directly.')
     } finally {
       setIsUploading(false)
@@ -128,16 +131,18 @@ export function UploadPanel({
                 <div className="rounded-full bg-primary/10 p-4">
                   {isUploading ? (
                     <span className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  ) : uploadedFileName ? (
+                    <FileText className="h-8 w-8 text-success" />
                   ) : (
                     <Upload className="h-8 w-8 text-primary" />
                   )}
                 </div>
                 <div>
                   <p className="font-medium text-foreground">
-                    {isUploading ? "Uploading..." : "Drop your document here"}
+                    {isUploading ? "Uploading..." : uploadedFileName ? `File: ${uploadedFileName}` : "Drop your document here"}
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {isUploading ? "Processing file..." : "or click to browse (PDF, DOC, TXT)"}
+                    {isUploading ? "Processing file..." : uploadedFileName ? "Ready for analysis" : "or click to browse (PDF, DOC, TXT)"}
                   </p>
                 </div>
               </div>
@@ -172,7 +177,14 @@ export function UploadPanel({
             )}
           </Button>
           {hasResults && (
-            <Button variant="outline" size="lg" onClick={onReset}>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => {
+                onReset()
+                setUploadedFileName("")
+              }}
+            >
               <RotateCcw className="mr-2 h-4 w-4" />
               Reset
             </Button>

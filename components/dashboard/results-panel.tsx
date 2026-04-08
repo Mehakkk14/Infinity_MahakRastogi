@@ -6,6 +6,7 @@ import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
+import { translateSeverity, translateTitle, translateText, type Language as TranslationLanguage } from "@/lib/translations"
 import type { AnalysisResult, Language, Decision } from "./dashboard-content"
 import { AmendmentsPanel } from "./amendments-panel"
 import { NegotiationTips } from "./negotiation-tips"
@@ -136,7 +137,7 @@ export function ResultsPanel({ results, language, setLanguage }: ResultsPanelPro
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <FileText className="h-5 w-5 text-primary" />
-            Summary
+            {translateTitle("Summary", language)}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -150,7 +151,7 @@ export function ResultsPanel({ results, language, setLanguage }: ResultsPanelPro
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg text-destructive">
               <AlertCircle className="h-5 w-5" />
-              Identified Risks ({results.risks.length})
+              {translateTitle("Identified Risks", language)} ({results.risks.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -164,11 +165,11 @@ export function ResultsPanel({ results, language, setLanguage }: ResultsPanelPro
                       risk.severity === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200' :
                       'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
                     }`}>
-                      {risk.severity}
+                      {translateSeverity(risk.severity, language)}
                     </span>
-                    <span className="font-semibold text-sm text-foreground">{risk.issue}</span>
+                    <span className="font-semibold text-sm text-foreground">{language === "en" ? risk.issue : translateText(risk.issue, language)}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground ml-8">{risk.explanation}</p>
+                  <p className="text-sm text-muted-foreground ml-8">{language === "en" ? risk.explanation : translateText(risk.explanation, language)}</p>
                 </li>
               ))}
             </ul>
@@ -181,7 +182,7 @@ export function ResultsPanel({ results, language, setLanguage }: ResultsPanelPro
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <DecisionIcon className={cn("h-5 w-5", config.color)} />
-            Should I Sign This?
+            {translateTitle("Should I Sign This?", language)}
           </CardTitle>
         </CardHeader>
         <CardContent>
