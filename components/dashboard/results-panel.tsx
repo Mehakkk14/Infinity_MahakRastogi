@@ -1,9 +1,12 @@
 "use client"
 
-import { AlertCircle, CheckCircle2, XCircle, FileText, AlertTriangle, Languages } from "lucide-react"
+import { AlertCircle, CheckCircle2, XCircle, FileText, AlertTriangle, Languages, Download } from "lucide-react"
+import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { exportAnalysisToPDF } from "@/lib/pdf-export"
 import type { AnalysisResult, Language, Decision } from "./dashboard-content"
 import { AmendmentsPanel } from "./amendments-panel"
 import { NegotiationTips } from "./negotiation-tips"
@@ -72,6 +75,9 @@ const decisionConfig: Record<Decision, {
 }
 
 export function ResultsPanel({ results, language, setLanguage }: ResultsPanelProps) {
+  const [isExporting, setIsExporting] = React.useState(false)
+  const [exportError, setExportError] = React.useState<string | null>(null)
+
   const config = decisionConfig[results.decision]
   const DecisionIcon = config.icon
 
@@ -91,9 +97,22 @@ export function ResultsPanel({ results, language, setLanguage }: ResultsPanelPro
     return "High Risk"
   }
 
+  const handleExportPDF = async () => {
+    setIsExporting(true)
+    setExportError(null)
+    try {
+      await exportAnalysisToPDF(results, "", "contract-analysis")
+    } catch (error) {
+      setExportError("Failed to export PDF. Please try again.")
+      console.error("PDF export error:", error)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4 max-h-[80vh] overflow-y-auto pr-2">
-      {/* Language Toggle */}
+      {/* Language Toggle & Export */}
       <Card className="border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <CardContent className="flex items-center justify-between py-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -116,7 +135,22 @@ export function ResultsPanel({ results, language, setLanguage }: ResultsPanelPro
               </button>
             ))}
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPDF}
+            disabled={isExporting}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            {isExporting ? "Exporting..." : "Export PDF"}
+          </Button>
         </CardContent>
+        {exportError && (
+          <CardContent className="pt-0">
+            <p className="text-sm text-destructive">{exportError}</p>
+          </CardContent>
+        )}
       </Card>
 
       {/* Risk Dashboard */}
