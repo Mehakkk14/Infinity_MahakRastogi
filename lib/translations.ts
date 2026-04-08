@@ -1,13 +1,17 @@
 // Translation helper for LegalEase AI
-// Converts common legal terms and phrases to Hindi and Hinglish
+// Converts legal analysis results to Hindi and Hinglish
 
 export type Language = "en" | "hi" | "hinglish"
 
-const riskLabels: Record<Language, Record<string, string>> = {
+// Comprehensive term translation dictionary
+const legalTerms: Record<Language, Record<string, string>> = {
   en: {},
   hi: {
+    // Common legal terms
     "non-compete": "गैर-स्पर्धा",
     "non-compete clause": "गैर-स्पर्धा खंड",
+    "intellectual": "बौद्धिक",
+    "property": "संपत्ति",
     "intellectual property": "बौद्धिक संपत्ति",
     "ip assignment": "आईपी असाइनमेंट",
     "arbitration": "मध्यस्थता",
@@ -17,31 +21,71 @@ const riskLabels: Record<Language, Record<string, string>> = {
     "liability": "दायित्व",
     "indemnification": "क्षतिपूर्ति",
     "overtime": "ओवरटाइम",
-    "right to jury trial": "जूरी ट्रायल का अधिकार",
-    "binding arbitration": "बाध्यकारी मध्यस्थता",
+    "jury trial": "जूरी ट्रायल",
+    "binding": "बाध्यकारी",
     "months": "महीने",
     "cannot": "नहीं कर सकते",
     "must": "को अवश्य",
     "will": "होगा",
+    "compensation": "मुआवजा",
+    "benefits": "लाभ",
+    "health insurance": "स्वास्थ्य बीमा",
+    "retirement": "सेवानिवृत्ति",
+    "agreement": "समझौता",
+    "contract": "अनुबंध",
+    "employee": "कर्मचारी",
+    "employer": "नियोक्ता",
+    "company": "कंपनी",
+    "work": "काम",
+    "hours": "घंटे",
+    "work hours": "कार्य घंटे",
+    "restrictions": "प्रतिबंध",
+    "clause": "खंड",
+    "risky": "जोखिम भरा",
+    "critical": "गंभीर",
+    "high": "उच्च",
+    "medium": "मध्यम",
+    "low": "कम",
   },
   hinglish: {
     "non-compete": "Non-compete",
     "non-compete clause": "Non-compete clause",
-    "intellectual property": "Intellectual property",
+    "intellectual": "intellectual",
+    "property": "property",
+    "intellectual property": "IP",
     "ip assignment": "IP assignment",
-    "arbitration": "Arbitration",
-    "termination": "Termination",
-    "at-will": "At-will",
-    "confidentiality": "Confidentiality",
-    "liability": "Liability",
-    "indemnification": "Indemnification",
-    "overtime": "Overtime",
-    "right to jury trial": "Jury trial ka haq",
-    "binding arbitration": "Binding arbitration",
+    "arbitration": "arbitration",
+    "termination": "termination",
+    "at-will": "at-will",
+    "confidentiality": "confidentiality",
+    "liability": "liability",
+    "indemnification": "indemnification",
+    "overtime": "overtime",
+    "jury trial": "jury ka trial",
+    "binding": "binding",
     "months": "mahine",
     "cannot": "nahi kar sakte",
     "must": "ko zaroor",
     "will": "hoga",
+    "compensation": "compensation",
+    "benefits": "benefits",
+    "health insurance": "health insurance",
+    "retirement": "retirement",
+    "agreement": "agreement",
+    "contract": "contract",
+    "employee": "employee",
+    "employer": "employer",
+    "company": "company",
+    "work": "kaam",
+    "hours": "ghante",
+    "work hours": "kaam ke ghante",
+    "restrictions": "restrictions",
+    "clause": "clause",
+    "risky": "risky",
+    "critical": "critical",
+    "high": "high",
+    "medium": "medium",
+    "low": "low",
   },
 }
 
@@ -98,7 +142,7 @@ const titleLabels: Record<Language, Record<string, string>> = {
     "Do Not Sign": "Sign mat karo",
     "Suggested Amendments": "Suggested Changes",
     "Negotiation Tips": "Baat-cheet ke tips",
-    "Risk Breakdown by Category": "Category ke hisaab se risk breakdown",
+    "Risk Breakdown by Category": "Category wise risk breakdown",
   },
 }
 
@@ -112,21 +156,23 @@ export function translateTitle(title: string, language: Language): string {
   return titleLabels[language][title] || title
 }
 
-export function translateText(text: string, language: Language): string {
+// Smart text translation - translates individual words in longer text
+export function smartTranslateText(text: string, language: Language): string {
   if (language === "en") return text
 
-  let translated = text
-  const labels = riskLabels[language]
+  let result = text
+  const terms = legalTerms[language]
 
-  if (language === "hi" || language === "hinglish") {
-    // Simple replacement for common terms (case-insensitive)
-    for (const [english, local] of Object.entries(labels)) {
-      const regex = new RegExp(`\\b${english}\\b`, "gi")
-      translated = translated.replace(regex, local)
-    }
+  // Sort by length (longest first) to match longer phrases first
+  const sortedTerms = Object.entries(terms).sort((a, b) => b[0].length - a[0].length)
+
+  for (const [english, translated] of sortedTerms) {
+    // Case-insensitive replacement for whole words
+    const regex = new RegExp(`\\b${english}\\b`, "gi")
+    result = result.replace(regex, translated)
   }
 
-  return translated
+  return result
 }
 
 export function getLanguageLabel(language: Language): string {
@@ -136,4 +182,37 @@ export function getLanguageLabel(language: Language): string {
     hinglish: "Hinglish",
   }
   return labels[language]
+}
+
+// Translate entire analysis result
+export function translateAnalysisResult(result: any, language: Language): any {
+  if (language === "en") return result
+
+  return {
+    ...result,
+    summary: smartTranslateText(result.summary, language),
+    decisionReason: smartTranslateText(result.decisionReason, language),
+    risks: result.risks?.map((risk: any) => ({
+      ...risk,
+      issue: smartTranslateText(risk.issue, language),
+      explanation: smartTranslateText(risk.explanation, language),
+      severity: translateSeverity(risk.severity, language),
+    })) || [],
+    amendments: result.amendments?.map((amendment: any) => ({
+      ...amendment,
+      original: smartTranslateText(amendment.original, language),
+      suggested: smartTranslateText(amendment.suggested, language),
+      reasoning: smartTranslateText(amendment.reasoning, language),
+    })) || [],
+    negotiationTips: result.negotiationTips?.map((tip: any) => ({
+      ...tip,
+      risk: smartTranslateText(tip.risk, language),
+      suggestion: smartTranslateText(tip.suggestion, language),
+      industry_standard: smartTranslateText(tip.industry_standard, language),
+    })) || [],
+    riskBreakdown: result.riskBreakdown?.map((breakdown: any) => ({
+      ...breakdown,
+      category: smartTranslateText(breakdown.category, language),
+    })) || [],
+  }
 }

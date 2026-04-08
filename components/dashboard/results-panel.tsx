@@ -6,7 +6,7 @@ import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
-import { translateSeverity, translateTitle, translateText, type Language as TranslationLanguage } from "@/lib/translations"
+import { translateSeverity, translateTitle, smartTranslateText, translateAnalysisResult, type Language as TranslationLanguage } from "@/lib/translations"
 import type { AnalysisResult, Language, Decision } from "./dashboard-content"
 import { AmendmentsPanel } from "./amendments-panel"
 import { NegotiationTips } from "./negotiation-tips"
@@ -18,32 +18,6 @@ interface ResultsPanelProps {
   results: AnalysisResult
   language: Language
   setLanguage: (lang: Language) => void
-}
-
-const translations: Record<Language, {
-  summary: string
-  decision: string
-  decisionReason: string
-}> = {
-  en: {
-    summary: "",
-    decision: "",
-    decisionReason: "",
-  },
-  hi: {
-    summary:
-      "यह टेककॉर्प इंक में सॉफ्टवेयर डेवलपर पद के लिए एक मानक रोजगार अनुबंध है। अनुबंध 40-घंटे का कार्य सप्ताह, आधार वेतन, स्वास्थ्य लाभ और 90-दिन की परिवीक्षा अवधि की रूपरेखा देता है।",
-    decision: "सावधान रहें",
-    decisionReason:
-      "जबकि आधार शर्तें मानक हैं, गैर-प्रतिस्पर्धा खंड और आईपी असाइनमेंट सामान्य से अधिक व्यापक हैं।",
-  },
-  hinglish: {
-    summary:
-      "Ye ek standard employment contract hai TechCorp Inc mein Software Developer position ke liye. Contract mein 40-hour work week, base salary, health benefits, aur 90-day probation period mentioned hai.",
-    decision: "Dhyan se dekho",
-    decisionReason:
-      "Base terms standard hain, lekin non-compete aur IP assignment typical se zyada broad hai. Inhe negotiate karne ki sochein.",
-  },
 }
 
 const decisionConfig: Record<Decision, {
@@ -80,9 +54,18 @@ export function ResultsPanel({ results, language, setLanguage }: ResultsPanelPro
   const config = decisionConfig[results.decision]
   const DecisionIcon = config.icon
 
-  const displaySummary = language === "en" ? results.summary : translations[language].summary
-  const displayDecision = language === "en" ? config.label : translations[language].decision
-  const displayReason = language === "en" ? results.decisionReason : translations[language].decisionReason
+  // Apply translations to results
+  const translatedResults = React.useMemo(() => {
+    return translateAnalysisResult(results, language)
+  }, [results, language])
+
+  const decisionLabels: Record<Language, Record<Decision, string>> = {
+    en: { safe: "Safe to Sign", careful: "Be Careful", risky: "Do Not Sign" },
+    hi: { safe: "हस्ताक्षर करने के लिए सुरक्षित", careful: "सावधान रहें", risky: "पर हस्ताक्षर न करें" },
+    hinglish: { safe: "Sign karne ke liye safe hai", careful: "Dhyan se dekho", risky: "Sign mat karo" },
+  }
+
+  const displayDecision = decisionLabels[language][results.decision]
 
   const getRiskScoreColor = (score: number) => {
     if (score <= 30) return "text-success"
@@ -141,22 +124,22 @@ export function ResultsPanel({ results, language, setLanguage }: ResultsPanelPro
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="leading-relaxed text-muted-foreground">{displaySummary}</p>
+          <p className="leading-relaxed text-muted-foreground">{translatedResults.summary}</p>
         </CardContent>
       </Card>
 
       {/* Risks Card */}
-      {results.risks && results.risks.length > 0 && (
+      {translatedResults.risks && translatedResults.risks.length > 0 && (
         <Card className="border-destructive/30 bg-destructive/5 backdrop-blur-sm">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg text-destructive">
               <AlertCircle className="h-5 w-5" />
-              {translateTitle("Identified Risks", language)} ({results.risks.length})
+              {translateTitle("Identified Risks", language)} ({translatedResults.risks.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
-              {results.risks.map((risk, index) => (
+              {translatedResults.risks.map((risk, index) => (
                 <li key={index} className="space-y-1">
                   <div className="flex items-start gap-2">
                     <span className={`mt-1 px-2 py-0.5 rounded text-xs font-medium ${
@@ -165,11 +148,11 @@ export function ResultsPanel({ results, language, setLanguage }: ResultsPanelPro
                       risk.severity === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200' :
                       'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
                     }`}>
-                      {translateSeverity(risk.severity, language)}
+                      {risk.severity}
                     </span>
-                    <span className="font-semibold text-sm text-foreground">{language === "en" ? risk.issue : translateText(risk.issue, language)}</span>
+                    <span className="font-semibold text-sm text-foreground">{risk.issue}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground ml-8">{language === "en" ? risk.explanation : translateText(risk.explanation, language)}</p>
+                  <p className="text-sm text-muted-foreground ml-8">{risk.explanation}</p>
                 </li>
               ))}
             </ul>
@@ -192,20 +175,20 @@ export function ResultsPanel({ results, language, setLanguage }: ResultsPanelPro
             </div>
             <div>
               <p className={cn("text-xl font-bold", config.color)}>{displayDecision}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{displayReason}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{translatedResults.decisionReason}</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Amendments Panel */}
-      {results.amendments && results.amendments.length > 0 && (
-        <AmendmentsPanel amendments={results.amendments} />
+      {translatedResults.amendments && translatedResults.amendments.length > 0 && (
+        <AmendmentsPanel amendments={translatedResults.amendments} />
       )}
 
       {/* Negotiation Tips */}
-      {results.negotiationTips && results.negotiationTips.length > 0 && (
-        <NegotiationTips tips={results.negotiationTips} />
+      {translatedResults.negotiationTips && translatedResults.negotiationTips.length > 0 && (
+        <NegotiationTips tips={translatedResults.negotiationTips} />
       )}
     </div>
   )

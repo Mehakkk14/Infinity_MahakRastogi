@@ -60,6 +60,7 @@ export function DashboardContent() {
         },
         body: JSON.stringify({
           documentText: documentText,
+          language: language,
         }),
       })
 

@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { documentText } = await request.json()
+    const { documentText, language } = await request.json()
 
     if (!documentText || documentText.trim().length === 0) {
       return NextResponse.json(
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Analyze with OpenAI
-    const analysisResult = await analyzeLegalDocument(documentText)
+    const analysisResult = await analyzeLegalDocument(documentText, language || 'en')
 
     return NextResponse.json(analysisResult)
   } catch (error: unknown) {

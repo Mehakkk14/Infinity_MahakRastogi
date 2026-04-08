@@ -80,10 +80,20 @@ async function callOpenAIWithRetry(
   throw new Error('Max retries exceeded')
 }
 
-export async function analyzeLegalDocument(documentText: string): Promise<EnhancedAnalysisResult> {
+export async function analyzeLegalDocument(documentText: string, language: string = 'en'): Promise<EnhancedAnalysisResult> {
   const limitedText = documentText.substring(0, 12000)
 
+  const languageInstructions = {
+    en: `Respond in English.`,
+    hi: `Respond in Hindi (हिंदी). Use proper Hindi grammar and vocabulary.`,
+    hinglish: `Respond in Hinglish (Hindi written in English). Mix Hindi words with English.`,
+  }
+
+  const langInstruction = (languageInstructions as Record<string, string>)[language] || languageInstructions.en
+
   const systemPrompt = `You are an expert legal contract analyzer. Analyze the contract and respond with ONLY valid JSON (no markdown, no extra text).
+
+${langInstruction}
 
 Respond with this exact structure:
 {
