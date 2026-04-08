@@ -39,7 +39,23 @@ export default function SignupPage() {
       await createUserWithEmailAndPassword(auth, email, password)
       router.push('/dashboard')
     } catch (err: any) {
-      setError(err.message || 'Failed to sign up')
+      // Better error handling
+      console.error('Signup error:', err)
+      let errorMsg = 'Failed to sign up'
+      
+      if (err.code === 'auth/invalid-api-key') {
+        errorMsg = 'Firebase configuration error'
+      } else if (err.code === 'auth/email-already-in-use') {
+        errorMsg = 'Email already in use'
+      } else if (err.code === 'auth/weak-password') {
+        errorMsg = 'Password is too weak'
+      } else if (err.code === 'auth/invalid-email') {
+        errorMsg = 'Invalid email address'
+      } else if (err.message) {
+        errorMsg = err.message
+      }
+      
+      setError(errorMsg)
     } finally {
       setLoading(false)
     }
@@ -55,8 +71,15 @@ export default function SignupPage() {
       await signInWithPopup(auth, provider)
       router.push('/dashboard')
     } catch (err: any) {
+      console.error('Google signup error:', err)
       if (err.code !== 'auth/popup-closed-by-user') {
-        setError(err.message || 'Google sign up failed')
+        let errorMsg = 'Google sign up failed'
+        if (err.code === 'auth/invalid-api-key') {
+          errorMsg = 'Firebase configuration error'
+        } else if (err.message) {
+          errorMsg = err.message
+        }
+        setError(errorMsg)
       }
     } finally {
       setLoading(false)
@@ -79,7 +102,16 @@ export default function SignupPage() {
       setConfirmationResult(result)
       setIsPhoneStep(true)
     } catch (err: any) {
-      setError(err.message || 'Failed to send OTP')
+      console.error('Phone OTP error:', err)
+      let errorMsg = 'Failed to send OTP'
+      if (err.code === 'auth/invalid-phone-number') {
+        errorMsg = 'Invalid phone number format'
+      } else if (err.code === 'auth/invalid-api-key') {
+        errorMsg = 'Firebase configuration error'
+      } else if (err.message) {
+        errorMsg = err.message
+      }
+      setError(errorMsg)
     } finally {
       setLoading(false)
     }
@@ -92,11 +124,18 @@ export default function SignupPage() {
     setLoading(true)
 
     try {
-      if (!confirmationResult) throw new Error('No confirmation result')
+      if (!confirmationResult) throw new Error('No OTP verification in progress')
       await confirmationResult.confirm(otp)
       router.push('/dashboard')
     } catch (err: any) {
-      setError(err.message || 'Failed to verify OTP')
+      console.error('OTP verification error:', err)
+      let errorMsg = 'Failed to verify OTP'
+      if (err.code === 'auth/invalid-verification-code') {
+        errorMsg = 'Invalid OTP code'
+      } else if (err.message) {
+        errorMsg = err.message
+      }
+      setError(errorMsg)
     } finally {
       setLoading(false)
     }
