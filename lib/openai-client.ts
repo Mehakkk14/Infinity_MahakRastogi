@@ -6,6 +6,37 @@ export const openai = new OpenAI({
   maxRetries: 2,
 })
 
+export interface RiskAmendment {
+  original: string
+  suggested: string
+  reasoning: string
+}
+
+export interface NegotiationTip {
+  risk: string
+  suggestion: string
+  industry_standard: string
+}
+
+export interface EnhancedAnalysisResult {
+  summary: string
+  contractType: 'employment' | 'service' | 'nda' | 'lease' | 'other'
+  risks: Array<{
+    issue: string
+    severity: 'critical' | 'high' | 'medium' | 'low'
+    explanation: string
+  }>
+  riskScore: number
+  decision: 'safe' | 'careful' | 'risky'
+  decisionReason: string
+  amendments: RiskAmendment[]
+  negotiationTips: NegotiationTip[]
+  riskBreakdown: {
+    category: string
+    percentage: number
+  }[]
+}
+
 // Helper function with retry logic
 async function callOpenAIWithRetry(
   model: string,
@@ -19,25 +50,11 @@ async function callOpenAIWithRetry(
         messages: [
           {
             role: 'system',
-            content: `You are a legal document expert. Analyze the provided contract and respond in valid JSON format (no markdown, just pure JSON). 
-Respond ONLY with a JSON object, no other text. The JSON must have these exact fields:
-{
-  "summary": "1-2 sentence summary of the document",
-  "risks": ["risk 1", "risk 2", "risk 3"],
-  "riskScore": <number 0-100>,
-  "decision": "safe" or "careful" or "risky",
-  "decisionReason": "explanation for the decision"
-}
-
-Risks should be specific concerns about the contract. Risk score: 0-30 = safe, 31-70 = careful, 71-100 = risky.`,
-          },
-          {
-            role: 'user',
             content: prompt,
           },
         ],
         temperature: 0.3,
-        max_tokens: 1000,
+        max_tokens: 2000,
       })
 
       return response.choices[0].message.content || '{}'
@@ -45,12 +62,10 @@ Risks should be specific concerns about the contract. Risk score: 0-30 = safe, 3
       const errorMsg = error instanceof Error ? error.message : String(error)
       const isRateLimit = errorMsg.includes('429') || errorMsg.includes('Too Many Requests')
 
-      // Don't retry on rate limit - fail immediately
       if (isRateLimit && attempt < maxRetries - 1) {
-        throw error // Pass through to outer handler
+        throw error
       }
 
-      // Retry other errors with backoff
       if (attempt < maxRetries - 1 && !isRateLimit) {
         const backoffMs = Math.pow(2, attempt) * 1000
         console.log(`Attempt ${attempt + 1} failed, retrying in ${backoffMs}ms...`, errorMsg)
@@ -65,16 +80,49 @@ Risks should be specific concerns about the contract. Risk score: 0-30 = safe, 3
   throw new Error('Max retries exceeded')
 }
 
-export async function analyzeLegalDocument(documentText: string): Promise<{
-  summary: string
-  risks: string[]
-  riskScore: number
-  decision: 'safe' | 'careful' | 'risky'
-  decisionReason: string
-}> {
-  // Limit document length
+export async function analyzeLegalDocument(documentText: string): Promise<EnhancedAnalysisResult> {
   const limitedText = documentText.substring(0, 12000)
-  const prompt = `Analyze this contract:\n\n${limitedText}`
+
+  const systemPrompt = `You are an expert legal contract analyzer. Analyze the contract and respond with ONLY valid JSON (no markdown, no extra text).
+
+Respond with this exact structure:
+{
+  "summary": "1-2 sentence overview",
+  "contractType": "employment|service|nda|lease|other",
+  "risks": [
+    {
+      "issue": "Issue name",
+      "severity": "critical|high|medium|low",
+      "explanation": "Why this is risky"
+    }
+  ],
+  "riskScore": <0-100>,
+  "decision": "safe|careful|risky",
+  "decisionReason": "Why this decision",
+  "amendments": [
+    {
+      "original": "Original problematic text",
+      "suggested": "Better version",
+      "reasoning": "Why this is better"
+    }
+  ],
+  "negotiationTips": [
+    {
+      "risk": "Risk name",
+      "suggestion": "How to negotiate it",
+      "industry_standard": "What's typical in industry"
+    }
+  ],
+  "riskBreakdown": [
+    {"category": "Compensation", "percentage": 25},
+    {"category": "Non-Compete", "percentage": 30}
+  ]
+}
+
+Contract to analyze:
+${limitedText}`
+
+  const prompt = systemPrompt
 
   // Try GPT-4 first, fall back to GPT-3.5 if not available
   const models = ['gpt-4', 'gpt-3.5-turbo']
@@ -84,7 +132,7 @@ export async function analyzeLegalDocument(documentText: string): Promise<{
   for (const model of models) {
     try {
       content = await callOpenAIWithRetry(model, prompt, 2)
-      break // Success
+      break
     } catch (error) {
       lastError = error as Error
       console.warn(`Model ${model} failed:`, error)
@@ -96,27 +144,34 @@ export async function analyzeLegalDocument(documentText: string): Promise<{
     throw lastError || new Error('All models failed')
   }
 
-  // Clean up potential markdown formatting
+  // Clean up markdown
   let jsonStr = content.trim()
-  if (jsonStr.startsWith('```json')) {
-    jsonStr = jsonStr.slice(7)
-  } else if (jsonStr.startsWith('```')) {
-    jsonStr = jsonStr.slice(3)
-  }
-  if (jsonStr.endsWith('```')) {
-    jsonStr = jsonStr.slice(0, -3)
-  }
+  if (jsonStr.startsWith('```json')) jsonStr = jsonStr.slice(7)
+  else if (jsonStr.startsWith('```')) jsonStr = jsonStr.slice(3)
+  if (jsonStr.endsWith('```')) jsonStr = jsonStr.slice(0, -3)
   jsonStr = jsonStr.trim()
 
   try {
-    const result = JSON.parse(jsonStr)
+    const result = JSON.parse(jsonStr) as EnhancedAnalysisResult
 
     return {
-      summary: result.summary || 'No summary available',
-      risks: Array.isArray(result.risks) ? result.risks : [],
+      summary: result.summary || 'Analysis complete',
+      contractType: result.contractType || 'other',
+      risks: Array.isArray(result.risks)
+        ? result.risks.map(r => ({
+            issue: r.issue || 'Unknown issue',
+            severity: r.severity || 'medium',
+            explanation: r.explanation || '',
+          }))
+        : [],
       riskScore: typeof result.riskScore === 'number' ? result.riskScore : 50,
       decision: ['safe', 'careful', 'risky'].includes(result.decision) ? result.decision : 'careful',
       decisionReason: result.decisionReason || 'Analysis complete',
+      amendments: Array.isArray(result.amendments) ? result.amendments : [],
+      negotiationTips: Array.isArray(result.negotiationTips) ? result.negotiationTips : [],
+      riskBreakdown: Array.isArray(result.riskBreakdown)
+        ? result.riskBreakdown.filter(r => r.percentage > 0)
+        : [],
     }
   } catch (parseError) {
     console.error('Failed to parse JSON response:', content, parseError)

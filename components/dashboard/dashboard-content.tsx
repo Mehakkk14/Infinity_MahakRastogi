@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { EnhancedAnalysisResult } from '@/lib/openai-client'
 import { UploadPanel } from "./upload-panel"
 import { ResultsPanel } from "./results-panel"
 import { EmptyState } from "./empty-state"
@@ -12,13 +13,7 @@ export type AnalysisState = "empty" | "loading" | "error" | "success"
 export type Language = "en" | "hi" | "hinglish"
 export type Decision = "safe" | "careful" | "risky"
 
-export interface AnalysisResult {
-  summary: string
-  risks: string[]
-  riskScore: number
-  decision: Decision
-  decisionReason: string
-}
+export type AnalysisResult = EnhancedAnalysisResult
 
 export function DashboardContent() {
   const [state, setState] = React.useState<AnalysisState>("empty")

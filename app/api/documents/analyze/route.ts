@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     if (!process.env.OPENAI_API_KEY) {
       console.log('Demo mode: OpenAI API key not configured')
       // Return demo analysis
-      return NextResponse.json(getDemoAnalysis(Math.floor(Math.random() * 3)))
+      return NextResponse.json(getDemoAnalysis())
     }
 
     // Analyze with OpenAI
@@ -35,11 +35,11 @@ export async function POST(request: NextRequest) {
     if (isRateLimit) {
       console.log('Rate limited by OpenAI API, using demo mode')
       // Return demo analysis instead of error
-      return NextResponse.json(getDemoAnalysis(Math.floor(Math.random() * 3)))
+      return NextResponse.json(getDemoAnalysis())
     }
 
     // For any other error, also fallback to demo mode
     console.log('API error - falling back to demo mode:', errorString)
-    return NextResponse.json(getDemoAnalysis(Math.floor(Math.random() * 3)))
+    return NextResponse.json(getDemoAnalysis())
   }
 }

@@ -5,6 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
 import type { AnalysisResult, Language, Decision } from "./dashboard-content"
+import { AmendmentsPanel } from "./amendments-panel"
+import { NegotiationTips } from "./negotiation-tips"
+import { RiskDashboard } from "./risk-dashboard"
 
 interface ResultsPanelProps {
   results: AnalysisResult
@@ -14,24 +17,17 @@ interface ResultsPanelProps {
 
 const translations: Record<Language, {
   summary: string
-  risks: string[]
   decision: string
   decisionReason: string
 }> = {
   en: {
     summary: "",
-    risks: [],
     decision: "",
     decisionReason: "",
   },
   hi: {
     summary:
       "यह टेककॉर्प इंक में सॉफ्टवेयर डेवलपर पद के लिए एक मानक रोजगार अनुबंध है। अनुबंध 40-घंटे का कार्य सप्ताह, आधार वेतन, स्वास्थ्य लाभ और 90-दिन की परिवीक्षा अवधि की रूपरेखा देता है।",
-    risks: [
-      "गैर-प्रतिस्पर्धा खंड 24 महीने के लिए प्रतियोगियों के साथ रोजगार प्रतिबंधित करता है",
-      "असीमित ओवरटाइम खंड बिना अतिरिक्त मुआवजे के",
-      "व्यक्तिगत परियोजनाओं सहित व्यापक बौद्धिक संपदा असाइनमेंट",
-    ],
     decision: "सावधान रहें",
     decisionReason:
       "जबकि आधार शर्तें मानक हैं, गैर-प्रतिस्पर्धा खंड और आईपी असाइनमेंट सामान्य से अधिक व्यापक हैं।",
@@ -39,11 +35,6 @@ const translations: Record<Language, {
   hinglish: {
     summary:
       "Ye ek standard employment contract hai TechCorp Inc mein Software Developer position ke liye. Contract mein 40-hour work week, base salary, health benefits, aur 90-day probation period mentioned hai.",
-    risks: [
-      "Non-compete clause 24 months tak competitors ke saath kaam karne se rokta hai",
-      "Unlimited overtime clause hai bina extra payment ke",
-      "Broad IP assignment hai jo personal projects ko bhi cover karta hai",
-    ],
     decision: "Dhyan se dekho",
     decisionReason:
       "Base terms standard hain, lekin non-compete aur IP assignment typical se zyada broad hai. Inhe negotiate karne ki sochein.",
@@ -85,7 +76,6 @@ export function ResultsPanel({ results, language, setLanguage }: ResultsPanelPro
   const DecisionIcon = config.icon
 
   const displaySummary = language === "en" ? results.summary : translations[language].summary
-  const displayRisks = language === "en" ? results.risks : translations[language].risks
   const displayDecision = language === "en" ? config.label : translations[language].decision
   const displayReason = language === "en" ? results.decisionReason : translations[language].decisionReason
 
@@ -102,9 +92,9 @@ export function ResultsPanel({ results, language, setLanguage }: ResultsPanelPro
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 max-h-[80vh] overflow-y-auto pr-2">
       {/* Language Toggle */}
-      <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+      <Card className="border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <CardContent className="flex items-center justify-between py-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Languages className="h-4 w-4" />
@@ -129,12 +119,19 @@ export function ResultsPanel({ results, language, setLanguage }: ResultsPanelPro
         </CardContent>
       </Card>
 
+      {/* Risk Dashboard */}
+      <RiskDashboard
+        riskScore={results.riskScore}
+        riskBreakdown={results.riskBreakdown || []}
+        contractType={results.contractType || 'other'}
+      />
+
       {/* Summary Card */}
       <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <FileText className="h-5 w-5 text-primary" />
-            Simple Summary
+            Summary
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -142,46 +139,37 @@ export function ResultsPanel({ results, language, setLanguage }: ResultsPanelPro
         </CardContent>
       </Card>
 
-      {/* Risk Alerts Card */}
-      <Card className="border-destructive/30 bg-destructive/5 backdrop-blur-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg text-destructive">
-            <AlertCircle className="h-5 w-5" />
-            Risky Clauses
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-3">
-            {displayRisks.map((risk, index) => (
-              <li key={index} className="flex items-start gap-3">
-                <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                <span className="text-sm text-muted-foreground">{risk}</span>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
-
-      {/* Risk Score Card */}
-      <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center justify-between text-lg">
-            <span>Risk Score</span>
-            <span className={cn("text-2xl font-bold", getRiskScoreColor(results.riskScore))}>
-              {results.riskScore}%
-            </span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Progress 
-            value={results.riskScore} 
-            className="h-3"
-          />
-          <p className={cn("mt-2 text-sm font-medium", getRiskScoreColor(results.riskScore))}>
-            {getRiskScoreLabel(results.riskScore)}
-          </p>
-        </CardContent>
-      </Card>
+      {/* Risks Card */}
+      {results.risks && results.risks.length > 0 && (
+        <Card className="border-destructive/30 bg-destructive/5 backdrop-blur-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              Identified Risks ({results.risks.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-3">
+              {results.risks.map((risk, index) => (
+                <li key={index} className="space-y-1">
+                  <div className="flex items-start gap-2">
+                    <span className={`mt-1 px-2 py-0.5 rounded text-xs font-medium ${
+                      risk.severity === 'critical' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200' :
+                      risk.severity === 'high' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200' :
+                      risk.severity === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200' :
+                      'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
+                    }`}>
+                      {risk.severity}
+                    </span>
+                    <span className="font-semibold text-sm text-foreground">{risk.issue}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground ml-8">{risk.explanation}</p>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Decision Card */}
       <Card className={cn("border backdrop-blur-sm", config.borderColor, config.bgColor)}>
@@ -203,6 +191,16 @@ export function ResultsPanel({ results, language, setLanguage }: ResultsPanelPro
           </div>
         </CardContent>
       </Card>
+
+      {/* Amendments Panel */}
+      {results.amendments && results.amendments.length > 0 && (
+        <AmendmentsPanel amendments={results.amendments} />
+      )}
+
+      {/* Negotiation Tips */}
+      {results.negotiationTips && results.negotiationTips.length > 0 && (
+        <NegotiationTips tips={results.negotiationTips} />
+      )}
     </div>
   )
 }
