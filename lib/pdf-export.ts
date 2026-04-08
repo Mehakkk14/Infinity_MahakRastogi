@@ -1,6 +1,6 @@
-import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
-import { EnhancedAnalysisResult } from './openai-client'
+'use client'
+
+import type { EnhancedAnalysisResult } from './openai-client'
 
 export async function exportAnalysisToPDF(
   analysis: EnhancedAnalysisResult,
@@ -8,6 +8,8 @@ export async function exportAnalysisToPDF(
   fileName: string = 'analysis'
 ) {
   try {
+    // Dynamically import jsPDF only on client side
+    const { jsPDF } = await import('jspdf')
     const doc = new jsPDF('p', 'mm', 'a4')
     const pageWidth = doc.internal.pageSize.getWidth()
     const pageHeight = doc.internal.pageSize.getHeight()
@@ -188,6 +190,8 @@ export async function exportAnalysisToPDF(
 
 export async function exportResultsToScreenshot(elementId: string, fileName: string = 'analysis') {
   try {
+    // Dynamically import html2canvas only on client side
+    const html2canvas = (await import('html2canvas')).default
     const element = document.getElementById(elementId)
     if (!element) {
       throw new Error('Element not found')
