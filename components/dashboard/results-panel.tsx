@@ -1,16 +1,17 @@
 "use client"
 
-import { AlertCircle, CheckCircle2, XCircle, FileText, AlertTriangle, Languages, Download } from "lucide-react"
+import dynamic from "next/dynamic"
+import { AlertCircle, CheckCircle2, XCircle, FileText, AlertTriangle, Languages } from "lucide-react"
 import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { exportAnalysisToPDF } from "@/lib/pdf-export"
 import type { AnalysisResult, Language, Decision } from "./dashboard-content"
 import { AmendmentsPanel } from "./amendments-panel"
 import { NegotiationTips } from "./negotiation-tips"
 import { RiskDashboard } from "./risk-dashboard"
+
+const PDFExportButton = dynamic(() => import("./pdf-export-button").then(mod => ({ default: mod.PDFExportButton })), { ssr: false })
 
 interface ResultsPanelProps {
   results: AnalysisResult
@@ -75,9 +76,6 @@ const decisionConfig: Record<Decision, {
 }
 
 export function ResultsPanel({ results, language, setLanguage }: ResultsPanelProps) {
-  const [isExporting, setIsExporting] = React.useState(false)
-  const [exportError, setExportError] = React.useState<string | null>(null)
-
   const config = decisionConfig[results.decision]
   const DecisionIcon = config.icon
 
@@ -95,19 +93,6 @@ export function ResultsPanel({ results, language, setLanguage }: ResultsPanelPro
     if (score <= 30) return "Low Risk"
     if (score <= 60) return "Moderate Risk"
     return "High Risk"
-  }
-
-  const handleExportPDF = async () => {
-    setIsExporting(true)
-    setExportError(null)
-    try {
-      await exportAnalysisToPDF(results, "", "contract-analysis")
-    } catch (error) {
-      setExportError("Failed to export PDF. Please try again.")
-      console.error("PDF export error:", error)
-    } finally {
-      setIsExporting(false)
-    }
   }
 
   return (
@@ -135,22 +120,8 @@ export function ResultsPanel({ results, language, setLanguage }: ResultsPanelPro
               </button>
             ))}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportPDF}
-            disabled={isExporting}
-            className="gap-2"
-          >
-            <Download className="h-4 w-4" />
-            {isExporting ? "Exporting..." : "Export PDF"}
-          </Button>
+          <PDFExportButton results={results} />
         </CardContent>
-        {exportError && (
-          <CardContent className="pt-0">
-            <p className="text-sm text-destructive">{exportError}</p>
-          </CardContent>
-        )}
       </Card>
 
       {/* Risk Dashboard */}
