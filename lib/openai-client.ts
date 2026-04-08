@@ -1,10 +1,18 @@
 import OpenAI from 'openai'
 
-export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  timeout: 30000,
-  maxRetries: 2,
-})
+let openaiClient: OpenAI | null = null
+
+// Lazy-load OpenAI client to avoid initialization errors during build
+export function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      timeout: 30000,
+      maxRetries: 2,
+    })
+  }
+  return openaiClient
+}
 
 export interface RiskAmendment {
   original: string
@@ -43,6 +51,8 @@ async function callOpenAIWithRetry(
   prompt: string,
   maxRetries: number = 3
 ): Promise<string> {
+  const openai = getOpenAIClient()
+  
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const response = await openai.chat.completions.create({
