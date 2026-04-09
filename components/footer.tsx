@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { FileSearch } from "lucide-react"
+import { Logo } from "@/components/logo"
 
 export function Footer() {
   return (
@@ -9,9 +9,7 @@ export function Footer() {
           {/* Brand */}
           <div>
             <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                <FileSearch className="h-5 w-5 text-primary-foreground" />
-              </div>
+              <Logo className="h-6 w-6 text-cyan-500" />
               <span className="text-xl font-bold tracking-tight text-foreground">LegalEase AI</span>
             </Link>
             <p className="mt-2 text-sm text-muted-foreground">

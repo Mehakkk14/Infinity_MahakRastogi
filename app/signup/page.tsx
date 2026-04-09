@@ -3,9 +3,10 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { FileSearch, Eye, EyeOff, Check, Smartphone } from "lucide-react"
+import { Eye, EyeOff, Check, Smartphone } from "lucide-react"
 import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth"
 import { auth } from "@/lib/firebase"
+import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -95,10 +96,8 @@ export default function SignUpPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center">
-          <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-              <FileSearch className="h-6 w-6 text-primary-foreground" />
-            </div>
+          <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
+            <Logo className="h-8 w-8 text-cyan-500" />
             <span className="text-2xl font-bold tracking-tight text-foreground">LegalEase AI</span>
           </Link>
         </div>
