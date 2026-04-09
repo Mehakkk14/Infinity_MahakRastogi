@@ -1,4 +1,5 @@
 import OpenAI from 'openai'
+import { translateAnalysisResult } from './translations'
 
 let openaiClient: OpenAI | null = null
 
@@ -99,17 +100,9 @@ async function callOpenAIWithRetry(
 export async function analyzeLegalDocument(documentText: string, language: string = 'en'): Promise<EnhancedAnalysisResult> {
   const limitedText = documentText.substring(0, 12000)
 
-  const languageInstructions = {
-    en: `Respond in English.`,
-    hi: `Respond in Hindi (हिंदी). Use proper Hindi grammar and vocabulary.`,
-    hinglish: `Respond in Hinglish (Hindi written in English). Mix Hindi words with English.`,
-  }
-
-  const langInstruction = (languageInstructions as Record<string, string>)[language] || languageInstructions.en
-
   const systemInstructions = `You are an expert legal contract analyzer. Analyze the contract and respond with ONLY valid JSON (no markdown, no extra text).
 
-${langInstruction}
+Always respond in English. The response will be translated to the user's language afterward.
 
 Respond with this exact structure:
 {
@@ -178,7 +171,7 @@ ${limitedText}`
   try {
     const result = JSON.parse(jsonStr) as EnhancedAnalysisResult
 
-    return {
+    const parsedResult = {
       summary: result.summary || 'Analysis complete',
       contractType: result.contractType || 'other',
       risks: Array.isArray(result.risks)
@@ -197,6 +190,13 @@ ${limitedText}`
         ? result.riskBreakdown.filter(r => r.percentage > 0)
         : [],
     }
+
+    // Translate result if language is not English
+    if (language !== 'en') {
+      return translateAnalysisResult(parsedResult, language as 'en' | 'hi' | 'hinglish')
+    }
+
+    return parsedResult
   } catch (parseError) {
     console.error('Failed to parse JSON response:', content, parseError)
     throw new Error('Failed to parse AI response as JSON')
