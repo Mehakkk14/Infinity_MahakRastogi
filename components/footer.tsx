@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Logo } from "@/components/logo"
+import Image from "next/image"
 
 export function Footer() {
   return (
@@ -9,7 +9,14 @@ export function Footer() {
           {/* Brand */}
           <div>
             <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
-              <Logo className="h-6 w-6 text-cyan-500" />
+              <Image
+                src="/logo.png"
+                alt="LegalEase AI"
+                width={32}
+                height={32}
+                className="h-8 w-8"
+                priority
+              />
               <span className="text-xl font-bold tracking-tight text-foreground">LegalEase AI</span>
             </Link>
             <p className="mt-2 text-sm text-muted-foreground">

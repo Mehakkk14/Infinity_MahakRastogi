@@ -2,11 +2,11 @@
 
 import * as React from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff, Check, Smartphone } from "lucide-react"
 import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth"
 import { auth } from "@/lib/firebase"
-import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -97,7 +97,14 @@ export default function SignUpPage() {
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center">
           <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
-            <Logo className="h-8 w-8 text-cyan-500" />
+            <Image
+              src="/logo.png"
+              alt="LegalEase AI"
+              width={40}
+              height={40}
+              className="h-10 w-10"
+              priority
+            />
             <span className="text-2xl font-bold tracking-tight text-foreground">LegalEase AI</span>
           </Link>
         </div>
