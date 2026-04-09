@@ -105,6 +105,8 @@ export async function analyzeLegalDocument(documentText: string, language: strin
     hinglish: `Respond in Hinglish (Hindi written in English). Mix Hindi words with English.`,
   }
 
+  const langInstruction = (languageInstructions as Record<string, string>)[language] || languageInstructions.en
+
   const systemInstructions = `You are an expert legal contract analyzer. Analyze the contract and respond with ONLY valid JSON (no markdown, no extra text).
 
 ${langInstruction}

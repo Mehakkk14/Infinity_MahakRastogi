@@ -21,9 +21,9 @@ export async function exportAnalysisToPDF(
     const addWrappedText = (text: string, fontSize: number, isBold: boolean = false) => {
       doc.setFontSize(fontSize)
       if (isBold) {
-        doc.setFont(undefined, 'bold')
+        doc.setFont('Helvetica', 'bold')
       } else {
-        doc.setFont(undefined, 'normal')
+        doc.setFont('Helvetica', 'normal')
       }
 
       const lines = doc.splitTextToSize(text, pageWidth - 2 * margin)
@@ -48,13 +48,13 @@ export async function exportAnalysisToPDF(
 
     // Risk Score
     doc.setFontSize(12)
-    doc.setFont(undefined, 'bold')
+    doc.setFont('Helvetica', 'bold')
     doc.text('Overall Risk Score:', margin, currentY)
     currentY += lineHeight
 
     doc.setFontSize(14)
     const riskColor = analysis.riskScore < 30 ? [34, 197, 94] : analysis.riskScore < 70 ? [251, 146, 60] : [239, 68, 68]
-    doc.setTextColor(...riskColor)
+    doc.setTextColor(riskColor[0], riskColor[1], riskColor[2])
     doc.text(`${analysis.riskScore}%`, margin + 50, currentY - lineHeight)
     doc.setTextColor(0, 0, 0)
     currentY += 8
@@ -69,13 +69,13 @@ export async function exportAnalysisToPDF(
 
     analysis.risks.forEach((risk, index) => {
       doc.setFontSize(10)
-      doc.setFont(undefined, 'bold')
+      doc.setFont('Helvetica', 'bold')
       const riskText = `${index + 1}. ${risk.issue} (${risk.severity})`
       doc.text(riskText, margin + 5, currentY)
       currentY += lineHeight
 
       doc.setFontSize(9)
-      doc.setFont(undefined, 'normal')
+      doc.setFont('Helvetica', 'normal')
       const riskLines = doc.splitTextToSize(risk.explanation, pageWidth - 2 * margin - 10)
       doc.text(riskLines, margin + 10, currentY)
       currentY += riskLines.length * lineHeight * 0.4 + 2
@@ -95,12 +95,12 @@ export async function exportAnalysisToPDF(
 
       analysis.amendments.forEach((amendment, index) => {
         doc.setFontSize(10)
-        doc.setFont(undefined, 'bold')
+        doc.setFont('Helvetica', 'bold')
         doc.text(`Amendment ${index + 1}:`, margin + 5, currentY)
         currentY += lineHeight
 
         doc.setFontSize(9)
-        doc.setFont(undefined, 'normal')
+        doc.setFont('Helvetica', 'normal')
 
         // Original text
         doc.setTextColor(200, 0, 0)
@@ -141,12 +141,12 @@ export async function exportAnalysisToPDF(
 
       analysis.negotiationTips.forEach((tip, index) => {
         doc.setFontSize(10)
-        doc.setFont(undefined, 'bold')
+        doc.setFont('Helvetica', 'bold')
         doc.text(`${index + 1}. ${tip.risk}`, margin + 5, currentY)
         currentY += lineHeight
 
         doc.setFontSize(9)
-        doc.setFont(undefined, 'normal')
+        doc.setFont('Helvetica', 'normal')
 
         const suggestionLines = doc.splitTextToSize(`Your Move: ${tip.suggestion}`, pageWidth - 2 * margin - 10)
         doc.text(suggestionLines, margin + 10, currentY)
