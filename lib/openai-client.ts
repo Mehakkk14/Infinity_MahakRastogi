@@ -45,10 +45,11 @@ export interface EnhancedAnalysisResult {
   }[]
 }
 
-// Helper function with retry logic
+// Helper function with retry logic - accepts separate system and user messages
 async function callOpenAIWithRetry(
   model: string,
-  prompt: string,
+  systemPrompt: string,
+  userMessage: string,
   maxRetries: number = 3
 ): Promise<string> {
   const openai = getOpenAIClient()
@@ -60,10 +61,15 @@ async function callOpenAIWithRetry(
         messages: [
           {
             role: 'system',
-            content: prompt,
+            content: systemPrompt,
+          },
+          {
+            role: 'user',
+            content: userMessage,
           },
         ],
         temperature: 0,
+        top_p: 1,
         max_tokens: 2000,
       })
 
@@ -99,9 +105,7 @@ export async function analyzeLegalDocument(documentText: string, language: strin
     hinglish: `Respond in Hinglish (Hindi written in English). Mix Hindi words with English.`,
   }
 
-  const langInstruction = (languageInstructions as Record<string, string>)[language] || languageInstructions.en
-
-  const systemPrompt = `You are an expert legal contract analyzer. Analyze the contract and respond with ONLY valid JSON (no markdown, no extra text).
+  const systemInstructions = `You are an expert legal contract analyzer. Analyze the contract and respond with ONLY valid JSON (no markdown, no extra text).
 
 ${langInstruction}
 
@@ -137,12 +141,10 @@ Respond with this exact structure:
     {"category": "Compensation", "percentage": 25},
     {"category": "Non-Compete", "percentage": 30}
   ]
-}
+}`
 
-Contract to analyze:
+  const userDocument = `Contract to analyze:
 ${limitedText}`
-
-  const prompt = systemPrompt
 
   // Try GPT-4 first, fall back to GPT-3.5 if not available
   const models = ['gpt-4', 'gpt-3.5-turbo']
@@ -151,7 +153,7 @@ ${limitedText}`
 
   for (const model of models) {
     try {
-      content = await callOpenAIWithRetry(model, prompt, 2)
+      content = await callOpenAIWithRetry(model, systemInstructions, userDocument, 2)
       break
     } catch (error) {
       lastError = error as Error
