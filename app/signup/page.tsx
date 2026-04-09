@@ -41,6 +41,12 @@ export default function SignUpPage() {
     setIsLoading(true)
 
     try {
+      if (!auth) {
+        setError("Firebase not initialized. Please refresh the page.")
+        setIsLoading(false)
+        return
+      }
+
       if (!isPasswordValid) {
         setError("Password does not meet requirements")
         setIsLoading(false)
@@ -67,6 +73,11 @@ export default function SignUpPage() {
     setError(null)
     setIsLoading(true)
     try {
+      if (!auth) {
+        setError("Firebase not initialized. Please refresh the page.")
+        setIsLoading(false)
+        return
+      }
       const provider = new GoogleAuthProvider()
       await signInWithPopup(auth, provider)
       router.push("/dashboard")

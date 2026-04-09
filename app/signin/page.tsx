@@ -31,6 +31,11 @@ export default function SignInPage() {
     setIsLoading(true)
 
     try {
+      if (!auth) {
+        setError("Firebase not initialized. Please refresh the page.")
+        setIsLoading(false)
+        return
+      }
       await signInWithEmailAndPassword(auth, formData.email, formData.password)
       router.push("/dashboard")
     } catch (err: any) {
@@ -53,6 +58,11 @@ export default function SignInPage() {
     setError(null)
     setIsLoading(true)
     try {
+      if (!auth) {
+        setError("Firebase not initialized. Please refresh the page.")
+        setIsLoading(false)
+        return
+      }
       const provider = new GoogleAuthProvider()
       await signInWithPopup(auth, provider)
       router.push("/dashboard")
