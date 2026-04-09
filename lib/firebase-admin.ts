@@ -4,8 +4,15 @@ import admin from 'firebase-admin'
 let adminInitialized = false
 
 // Lazy-initialize Firebase Admin to avoid issues during build
+// Only initialize if we have all required environment variables
 function initializeFirebaseAdmin() {
   if (adminInitialized || admin.apps.length > 0) {
+    return
+  }
+
+  // Skip initialization if environment variables are missing (build time)
+  if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+    console.warn('Firebase Admin credentials not available, skipping initialization (likely build time)')
     return
   }
 
@@ -27,6 +34,12 @@ function initializeFirebaseAdmin() {
 export const verifyIdToken = async (token: string) => {
   try {
     initializeFirebaseAdmin()
+    
+    // If Firebase Admin isn't initialized, we can't verify
+    if (!adminInitialized || admin.apps.length === 0) {
+      throw new Error('Firebase Admin not initialized. Missing credentials.')
+    }
+    
     const decodedToken = await getAuth().verifyIdToken(token)
     return decodedToken
   } catch (error) {
