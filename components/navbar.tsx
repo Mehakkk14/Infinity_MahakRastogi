@@ -64,6 +64,21 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
+          
+          {/* Document Analyzer - only when logged in */}
+          {user && (
+            <Link
+              href="/dashboard"
+              className={cn(
+                "text-sm font-medium transition-colors hover:text-primary",
+                pathname === "/dashboard"
+                  ? "text-primary"
+                  : "text-muted-foreground"
+              )}
+            >
+              Document Analyzer
+            </Link>
+          )}
         </div>
 
         {/* Right side actions */}
@@ -151,6 +166,23 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
+            
+            {/* Document Analyzer - only when logged in */}
+            {user && (
+              <Link
+                href="/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className={cn(
+                  "rounded-lg px-4 py-3 text-sm font-medium transition-colors",
+                  pathname === "/dashboard"
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                Document Analyzer
+              </Link>
+            )}
+            
             <div className="mt-2 flex flex-col gap-2">
               {user ? (
                 <>
